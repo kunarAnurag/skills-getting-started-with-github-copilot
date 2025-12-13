@@ -3,6 +3,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const activitySelect = document.getElementById("activity");
   const signupForm = document.getElementById("signup-form");
   const messageDiv = document.getElementById("message");
+  const template = document.getElementById("activity-card-template");
 
   // Function to fetch activities from API
   async function fetchActivities() {
@@ -10,24 +11,45 @@ document.addEventListener("DOMContentLoaded", () => {
       const response = await fetch("/activities");
       const activities = await response.json();
 
-      // Clear loading message
+      // Clear loading message and select options (keep default)
       activitiesList.innerHTML = "";
+      activitySelect.innerHTML = '<option value="">-- Select an activity --</option>';
 
       // Populate activities list
       Object.entries(activities).forEach(([name, details]) => {
-        const activityCard = document.createElement("div");
-        activityCard.className = "activity-card";
+        const spotsLeft = details.max_participants - (details.participants?.length || 0);
 
-        const spotsLeft = details.max_participants - details.participants.length;
+        // Clone template and fill in values
+        const clone = template.content.cloneNode(true);
+        const card = clone.querySelector(".activity-card");
+        clone.querySelector(".activity-title").textContent = name;
+        clone.querySelector(".activity-desc").textContent = details.description;
+        clone.querySelector(".activity-schedule").innerHTML = `<strong>Schedule:</strong> ${details.schedule}`;
 
-        activityCard.innerHTML = `
-          <h4>${name}</h4>
-          <p>${details.description}</p>
-          <p><strong>Schedule:</strong> ${details.schedule}</p>
-          <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
-        `;
+        // Add availability paragraph
+        const availabilityP = document.createElement("p");
+        availabilityP.innerHTML = `<strong>Availability:</strong> ${spotsLeft} spots left`;
+        card.appendChild(availabilityP);
 
-        activitiesList.appendChild(activityCard);
+        // Populate participants list or show empty state
+        const participantsList = clone.querySelector(".participants-list");
+        const participantsEmpty = clone.querySelector(".participants-empty");
+        participantsList.innerHTML = "";
+
+        if (details.participants && details.participants.length > 0) {
+          details.participants.forEach((p) => {
+            const li = document.createElement("li");
+            li.textContent = p;
+            participantsList.appendChild(li);
+          });
+          participantsList.classList.remove("hidden");
+          participantsEmpty.classList.add("hidden");
+        } else {
+          participantsList.classList.add("hidden");
+          participantsEmpty.classList.remove("hidden");
+        }
+
+        activitiesList.appendChild(clone);
 
         // Add option to select dropdown
         const option = document.createElement("option");
@@ -62,6 +84,9 @@ document.addEventListener("DOMContentLoaded", () => {
         messageDiv.textContent = result.message;
         messageDiv.className = "success";
         signupForm.reset();
+
+        // Refresh activities to show updated participants
+        await fetchActivities();
       } else {
         messageDiv.textContent = result.detail || "An error occurred";
         messageDiv.className = "error";
