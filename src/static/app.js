@@ -6,6 +6,26 @@ document.addEventListener("DOMContentLoaded", () => {
   const template = document.getElementById("activity-card-template");
 
   // Function to fetch activities from API
+
+// Function to unregister a participant
+function unregisterParticipant(email) {
+    // Logic to unregister the participant
+    console.log(`Unregistered: ${email}`);
+}
+
+// Function to add delete icons next to participants
+function addDeleteIcons() {
+    const participantItems = document.querySelectorAll('.participants-list li');
+    participantItems.forEach(item => {
+        const email = item.textContent;
+        const deleteIcon = document.createElement('span');
+        deleteIcon.textContent = '🗑️'; // Using a trash can emoji as the delete icon
+        deleteIcon.style.cursor = 'pointer';
+        deleteIcon.onclick = () => unregisterParticipant(email);
+        item.appendChild(deleteIcon);
+    });
+}
+
   async function fetchActivities() {
     try {
       const response = await fetch("/activities");
