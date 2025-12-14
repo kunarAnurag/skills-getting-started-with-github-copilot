@@ -8,9 +8,26 @@ document.addEventListener("DOMContentLoaded", () => {
   // Function to fetch activities from API
 
 // Function to unregister a participant
-function unregisterParticipant(email) {
-    // Logic to unregister the participant
-    console.log(`Unregistered: ${email}`);
+async function unregisterParticipant(email, activity) {
+    try {
+        const response = await fetch(
+            `/activities/${encodeURIComponent(activity)}/unregister?email=${encodeURIComponent(email)}`,
+            {
+                method: "DELETE",
+            }
+        );
+
+        if (response.ok) {
+            // Refresh activities to update the list and availability
+            await fetchActivities();
+        } else {
+            const result = await response.json();
+            alert(result.detail || "Failed to unregister");
+        }
+    } catch (error) {
+        console.error("Error unregistering:", error);
+        alert("Failed to unregister. Please try again.");
+    }
 }
 
 // Function to add delete icons next to participants
@@ -18,10 +35,11 @@ function addDeleteIcons() {
     const participantItems = document.querySelectorAll('.participants-list li');
     participantItems.forEach(item => {
         const email = item.textContent;
+        const activity = item.dataset.activity;
         const deleteIcon = document.createElement('span');
         deleteIcon.textContent = '🗑️'; // Using a trash can emoji as the delete icon
         deleteIcon.style.cursor = 'pointer';
-        deleteIcon.onclick = () => unregisterParticipant(email);
+        deleteIcon.onclick = () => unregisterParticipant(email, activity);
         item.appendChild(deleteIcon);
     });
 }
@@ -60,6 +78,7 @@ function addDeleteIcons() {
           details.participants.forEach((p) => {
             const li = document.createElement("li");
             li.textContent = p;
+            li.dataset.activity = name;  // Store activity name for unregister
             participantsList.appendChild(li);
           });
           participantsList.classList.remove("hidden");
@@ -77,6 +96,9 @@ function addDeleteIcons() {
         option.textContent = name;
         activitySelect.appendChild(option);
       });
+
+      // Add delete icons to all participants
+      addDeleteIcons();
     } catch (error) {
       activitiesList.innerHTML = "<p>Failed to load activities. Please try again later.</p>";
       console.error("Error fetching activities:", error);
